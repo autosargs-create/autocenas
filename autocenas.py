@@ -66,13 +66,36 @@ CHROMIUM_SPEED_FLAGS = [
 
 
 def scrape_dipex(part_number: str):
-    """Izvelk cenas un detaļas no Dipex.lv, izmantojot optimizētu Chromium."""
+    """Izvelk cenas un detaļas no Dipex.lv ar zibenīgu pieprasījumu (fallback uz Chromium)."""
     url = get_dipex_url(part_number)
-    cmd = CHROMIUM_SPEED_FLAGS + ['--dump-dom', url]
+    html = ""
+
+    # 1. Ļoti ātrs pieprasījums (0.3s) ar pilnām pārlūka galvenēm
+    cmd_curl = [
+        'curl', '-s', '-L',
+        '-H', 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0',
+        '-H', 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        '-H', 'Accept-Language: lv,en-US;q=0.7,en;q=0.3',
+        '-H', 'Sec-Fetch-Dest: document',
+        '-H', 'Sec-Fetch-Mode: navigate',
+        '-H', 'Sec-Fetch-Site: none',
+        '-H', 'Sec-Fetch-User: ?1',
+        url
+    ]
     try:
-        html = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True, timeout=25)
+        res = subprocess.check_output(cmd_curl, stderr=subprocess.DEVNULL, text=True, timeout=8)
+        if 'GTMTool' in res and len(res) > 15000:
+            html = res
     except Exception:
-        return []
+        pass
+
+    # 2. Ja Cloudflare pieprasa pārlūku, palaižam caur Chromium
+    if not html:
+        cmd_chrome = CHROMIUM_SPEED_FLAGS + ['--dump-dom', url]
+        try:
+            html = subprocess.check_output(cmd_chrome, stderr=subprocess.DEVNULL, text=True, timeout=25)
+        except Exception:
+            return []
 
     # 1. Parsējam GTM datus pēc produkta ID
     impressions = re.findall(r'GTMTool\.addImpressions\(\s*({[\s\S]*?})\s*\);', html)
@@ -128,7 +151,7 @@ def scrape_dipex(part_number: str):
 def scrape_ic24(part_number: str):
     """Izvelk cenas un pieejamību no IC24.lv, izmantojot optimizētu Chromium."""
     url = get_ic24_url(part_number)
-    cmd = CHROMIUM_SPEED_FLAGS + ['--virtual-time-budget=5000', '--dump-dom', url]
+    cmd = CHROMIUM_SPEED_FLAGS + ['--virtual-time-budget=4000', '--dump-dom', url]
     try:
         html = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True, timeout=30)
     except Exception:
