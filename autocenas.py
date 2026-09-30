@@ -54,8 +54,6 @@ CHROMIUM_SPEED_FLAGS = [
     '--no-sandbox',
     '--disable-dev-shm-usage',
     '--disable-blink-features=AutomationControlled',
-    '--blink-settings=imagesEnabled=false',
-    '--disable-remote-fonts',
     '--disable-extensions',
     '--disable-background-networking',
     '--disable-sync',
@@ -151,9 +149,9 @@ def scrape_dipex(part_number: str):
 def scrape_ic24(part_number: str):
     """Izvelk cenas un pieejamību no IC24.lv, izmantojot optimizētu Chromium."""
     url = get_ic24_url(part_number)
-    cmd = CHROMIUM_SPEED_FLAGS + ['--virtual-time-budget=4000', '--dump-dom', url]
+    cmd = CHROMIUM_SPEED_FLAGS + ['--virtual-time-budget=6000', '--dump-dom', url]
     try:
-        html = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True, timeout=30)
+        html = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True, timeout=35)
     except Exception:
         return []
 
