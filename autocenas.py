@@ -47,18 +47,30 @@ def get_ic24_url(part_number: str) -> str:
     return f"https://www.ic24.lv/detalas/?search={b64_q}"
 
 
+CHROMIUM_SPEED_FLAGS = [
+    'chromium',
+    '--headless=new',
+    '--disable-gpu',
+    '--no-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-blink-features=AutomationControlled',
+    '--blink-settings=imagesEnabled=false',
+    '--disable-remote-fonts',
+    '--disable-extensions',
+    '--disable-background-networking',
+    '--disable-sync',
+    '--disable-default-apps',
+    '--no-first-run',
+    '--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+]
+
+
 def scrape_dipex(part_number: str):
-    """Izvelk cenas un detaļas no Dipex.lv, izmantojot Chromium."""
+    """Izvelk cenas un detaļas no Dipex.lv, izmantojot optimizētu Chromium."""
     url = get_dipex_url(part_number)
-    cmd = [
-        'chromium', '--headless=new', '--disable-gpu',
-        '--no-sandbox', '--disable-dev-shm-usage',
-        '--disable-blink-features=AutomationControlled',
-        '--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        '--dump-dom', url
-    ]
+    cmd = CHROMIUM_SPEED_FLAGS + ['--dump-dom', url]
     try:
-        html = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True, timeout=30)
+        html = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True, timeout=25)
     except Exception:
         return []
 
@@ -114,18 +126,11 @@ def scrape_dipex(part_number: str):
 
 
 def scrape_ic24(part_number: str):
-    """Izvelk cenas un pieejamību no IC24.lv."""
+    """Izvelk cenas un pieejamību no IC24.lv, izmantojot optimizētu Chromium."""
     url = get_ic24_url(part_number)
-    cmd = [
-        'chromium', '--headless=new', '--disable-gpu',
-        '--no-sandbox', '--disable-dev-shm-usage',
-        '--disable-blink-features=AutomationControlled',
-        '--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        '--virtual-time-budget=6000',
-        '--dump-dom', url
-    ]
+    cmd = CHROMIUM_SPEED_FLAGS + ['--virtual-time-budget=5000', '--dump-dom', url]
     try:
-        html = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True, timeout=35)
+        html = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True, timeout=30)
     except Exception:
         return []
 

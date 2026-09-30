@@ -15,11 +15,16 @@ if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(line_buffering=True)
 if hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(line_buffering=True)
+import time
 import json
 import urllib.parse
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+
+# Zibenīga kešatmiņa (30 minūtes)
+SEARCH_CACHE = {}
+CACHE_TTL = 1800
 
 # Importējam skreiperus no mūsu autocenas.py moduļa
 CURRENT_DIR = Path(__file__).parent.resolve()
@@ -76,6 +81,14 @@ class AutoCenasHandler(BaseHTTPRequestHandler):
                 self.send_json({"error": "Detaļas numurs ir obligāts!"}, status=400)
                 return
 
+            now = time.time()
+            if part_number in SEARCH_CACHE:
+                cached_time, cached_data = SEARCH_CACHE[part_number]
+                if now - cached_time < CACHE_TTL:
+                    print(f"[API] ⚡ Detaļa {part_number} atrasta kešatmiņā (atbilde 0.001s)!")
+                    self.send_json(cached_data)
+                    return
+
             print(f"\n[API] Meklējam detaļu: {part_number} ...")
             items = []
 
@@ -108,6 +121,7 @@ class AutoCenasHandler(BaseHTTPRequestHandler):
                 "items": items
             }
 
+            SEARCH_CACHE[part_number] = (now, response_data)
             self.send_json(response_data)
             return
 
