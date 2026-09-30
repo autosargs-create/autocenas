@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoCenas — Rezerves daļu cenu meklētājs</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚗</text></svg>">
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --surface: #151c2c;
+            --surface-hover: #1e283d;
+            --surface-card: #182235;
+            --border: #26334d;
+            --primary: #38bdf8;
+            --primary-hover: #7dd3fc;
+            --accent: #f59e0b;
+            --green: #10b981;
+            --green-bg: rgba(16, 185, 129, 0.12);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: 4rem;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        /* Top header */
+        header {
+            padding: 2.5rem 0 1.5rem 0;
+            text-align: center;
+        }
+
+        .badge-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--primary);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            padding: 0.35rem 0.9rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+        }
+
+        h1 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+        }
+
+        /* Search Section */
+        .search-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .input-wrapper {
+            position: relative;
+            flex: 1;
+        }
+
+        .input-wrapper svg {
+            position: absolute;
+            left: 1.1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            color: #fff;
+            font-size: 1.25rem;
+            font-weight: 600;
+            padding: 1rem 1rem 1rem 3.2rem;
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        input[type="text"]::placeholder {
+            text-transform: none;
+            color: #475569;
+            font-weight: 400;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15);
+        }
+
+        .btn-search {
+            background: var(--primary);
+            color: #04101e;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 700;
+            padding: 0 2rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .btn-search:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-search:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Chips & Quick items */
+        .quick-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .chip {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.25rem 0.65rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: monospace;
+            font-weight: 600;
+            transition: all 0.15s;
+        }
+
+        .chip:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Store Direct Links */
+        .store-links-container {
+            display: none;
+            margin: 1.5rem 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1rem 1.25rem;
+        }
+
+        .store-links-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .store-links-grid {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .store-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            text-decoration: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        .store-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--surface-hover);
+        }
+
+        .store-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .dot-trodo { background: #3b82f6; }
+        .dot-dipex { background: #f97316; }
+        .dot-ic24 { background: #ef4444; }
+
+        /* Summary Stats & Filters */
+        .controls-bar {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            margin: 1.5rem 0 1rem 0;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .stats-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .stats-highlight {
+            color: var(--green);
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        select {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        select:focus {
+            border-color: var(--primary);
+        }
+
+        /* Results Table */
+        .table-container {
+            display: none;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: #0f1523;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: var(--surface-hover);
+        }
+
+        /* Highlight cheapest */
+        tr.is-cheapest td {
+            background: var(--green-bg);
+        }
+
+        .store-pill-mini {
+            display: inline-block;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+        }
+
+        .pill-dipex {
+            background: rgba(249, 115, 22, 0.15);
+            color: #fb923c;
+            border: 1px solid rgba(249, 115, 22, 0.3);
+        }
+
+        .pill-ic24 {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .pill-trodo {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .brand-badge {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.02em;
+        }
+
+        .item-name {
+            font-weight: 500;
+            color: #e2e8f0;
+        }
+
+        .price-text {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #fff;
+            white-space: nowrap;
+        }
+
+        .is-cheapest .price-text {
+            color: var(--green);
+        }
+
+        .badge-best {
+            display: inline-block;
+            background: var(--green);
+            color: #04101e;
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 0.4rem;
+            vertical-align: middle;
+        }
+
+        .stock-tag {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .stock-available {
+            color: #34d399;
+            font-weight: 600;
+        }
+
+        .action-link {
+            display: inline-block;
+            background: var(--surface-card);
+            color: var(--primary);
+            border: 1px solid var(--border);
+            padding: 0.45rem 0.85rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .action-link:hover {
+            background: var(--primary);
+            color: #04101e;
+            border-color: var(--primary);
+        }
+
+        /* Loading Spinner */
+        .loading-container {
+            display: none;
+            text-align: center;
+            padding: 4rem 1rem;
+        }
+
+        .spinner {
+            width: 44px;
+            height: 44px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1.5rem auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty state */
+        .empty-state {
+            display: none;
+            text-align: center;
+            padding: 3rem 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            .search-box { flex-direction: column; }
+            .btn-search { padding: 1rem; justify-content: center; }
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { position: absolute; top: -9999px; left: -9999px; }
+            tr { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1rem; padding: 1rem; background: var(--surface); }
+            td { border: none; padding: 0.4rem 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="badge-brand">🚗 AutoCenas Live v1.0</div>
+        <h1>Rezerves Daļu Cenu Meklētājs</h1>
+        <p class="subtitle">Ievadi OEM detaļas numuru vai artikulu, lai salīdzinātu cenas no Trodo, Dipex un IC24</p>
+    </header>
+
+    <div class="search-card">
+        <form id="searchForm" onsubmit="handleSearch(event)">
+            <div class="search-box">
+                <div class="input-wrapper">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="partInput" placeholder="Iekopē detaļas numuru (piemēram, 03L115562 vai W712/94)" autofocus autocomplete="off" spellcheck="false">
+                </div>
+                <button type="submit" id="searchBtn" class="btn-search">
+                    <span>Meklēt Cenas</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </button>
+            </div>
+        </form>
+
+        <div class="quick-bar">
+            <span>Ātrie paraugi:</span>
+            <span class="chip" onclick="setAndSearch('03L115562')">03L115562 (VAG filtrs)</span>
+            <span class="chip" onclick="setAndSearch('W712/94')">W712/94 (Mann filtrs)</span>
+            <span class="chip" onclick="setAndSearch('038103601NA')">038103601NA (Karteris)</span>
+            <span class="chip" onclick="setAndSearch('1K0698151')">1K0698151 (Bremžu kluči)</span>
+        </div>
+    </div>
+
+    <!-- Store direct search links banner -->
+    <div id="storeLinks" class="store-links-container">
+        <div class="store-links-title">Tiešās saites uz veikalu meklēšanu:</div>
+        <div class="store-links-grid">
+            <a id="linkTrodo" href="#" target="_blank" class="store-btn">
+                <span class="store-dot dot-trodo"></span>
+                <span>Trodo.lv meklēšana ↗</span>
+            </a>
+            <a id="linkDipex" href="#" target="_blank" class="store-btn">
+                <span class="store-dot dot-dipex"></span>
+                <span>Dipex.lv meklēšana ↗</span>
+            </a>
+            <a id="linkIc24" href="#" target="_blank" class="store-btn">
+                <span class="store-dot dot-ic24"></span>
+                <span>IC24.lv meklēšana ↗</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading" class="loading-container">
+        <div class="spinner"></div>
+        <h3 id="loadingText" style="margin-bottom: 0.5rem;">Meklējam cenas veikalos Dipex.lv un IC24.lv...</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Pārbaudām noliktavas un salīdzinām cenas sekundes laikā.</p>
+    </div>
+
+    <!-- Controls Bar: Stats and Filters -->
+    <div id="controlsBar" class="controls-bar">
+        <div id="statsText" class="stats-text"></div>
+        <div class="filter-group">
+            <label for="brandSelect" style="color: var(--text-muted); font-size: 0.9rem;">Ražotājs:</label>
+            <select id="brandSelect" onchange="renderTable()">
+                <option value="ALL">Visi ražotāji</option>
+            </select>
+
+            <label for="sortSelect" style="color: var(--text-muted); font-size: 0.9rem; margin-left: 0.5rem;">Kārtot:</label>
+            <select id="sortSelect" onchange="renderTable()">
+                <option value="asc">Cena: No zemākās</option>
+                <option value="desc">Cena: No augstākās</option>
+                <option value="brand">Ražotājs: A-Z</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div id="tableContainer" class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 130px;">Veikals</th>
+                    <th style="width: 170px;">Ražotājs</th>
+                    <th>Detaļas Nosaukums / Artikuls</th>
+                    <th style="width: 150px;">Cena (€)</th>
+                    <th style="width: 140px;">Pieejamība</th>
+                    <th style="width: 150px; text-align: right;">Saite</th>
+                </tr>
+            </thead>
+            <tbody id="resultsBody">
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="empty-state">
+        <h3>Šim kodam neviena pozīcija netika atrasta.</h3>
+        <p style="margin-top: 0.5rem;">Pārbaudi ievadītā numura pareizību vai izmanto tiešās saites uz veikaliem augstāk.</p>
+    </div>
+</div>
+
+<script>
+    let currentItems = [];
+    let currentPart = '';
+
+    function setAndSearch(code) {
+        document.getElementById('partInput').value = code;
+        handleSearch();
+    }
+
+    async function handleSearch(e) {
+        if (e) e.preventDefault();
+        const input = document.getElementById('partInput');
+        const query = input.value.trim();
+        if (!query) return;
+
+        currentPart = query;
+        const btn = document.getElementById('searchBtn');
+        const loading = document.getElementById('loading');
+        const tableContainer = document.getElementById('tableContainer');
+        const controlsBar = document.getElementById('controlsBar');
+        const storeLinks = document.getElementById('storeLinks');
+        const emptyState = document.getElementById('emptyState');
+
+        // UI state: loading
+        btn.disabled = true;
+        loading.style.display = 'block';
+        tableContainer.style.display = 'none';
+        controlsBar.style.display = 'none';
+        emptyState.style.display = 'none';
+
+        try {
+            const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+
+            currentItems = data.items || [];
+
+            // Set store direct links
+            document.getElementById('linkTrodo').href = data.links.trodo;
+            document.getElementById('linkDipex').href = data.links.dipex;
+            document.getElementById('linkIc24').href = data.links.ic24;
+            storeLinks.style.display = 'block';
+
+            if (currentItems.length > 0) {
+                populateBrandFilter();
+                renderTable();
+                tableContainer.style.display = 'block';
+                controlsBar.style.display = 'flex';
+            } else {
+                emptyState.style.display = 'block';
+            }
+        } catch (err) {
+            alert('Kļūda iegūstot datus: ' + err.message);
+        } finally {
+            loading.style.display = 'none';
+            btn.disabled = false;
+        }
+    }
+
+    function populateBrandFilter() {
+        const brandSelect = document.getElementById('brandSelect');
+        const brands = Array.from(new Set(currentItems.map(x => x.brand).filter(Boolean))).sort();
+        
+        brandSelect.innerHTML = '<option value="ALL">Visi ražotāji (' + currentItems.length + ')</option>';
+        brands.forEach(b => {
+            const count = currentItems.filter(x => x.brand === b).length;
+            const opt = document.createElement('option');
+            opt.value = b;
+            opt.textContent = `${b} (${count})`;
+            brandSelect.appendChild(opt);
+        });
+    }
+
+    function renderTable() {
+        const brandFilter = document.getElementById('brandSelect').value;
+        const sortBy = document.getElementById('sortSelect').value;
+        const tbody = document.getElementById('resultsBody');
+        tbody.innerHTML = '';
+
+        let items = [...currentItems];
+
+        if (brandFilter !== 'ALL') {
+            items = items.filter(x => x.brand === brandFilter);
+        }
+
+        if (sortBy === 'asc') {
+            items.sort((a, b) => a.price - b.price);
+        } else if (sortBy === 'desc') {
+            items.sort((a, b) => b.price - a.price);
+        } else if (sortBy === 'brand') {
+            items.sort((a, b) => a.brand.localeCompare(b.brand));
+        }
+
+        const minPrice = items.length > 0 ? Math.min(...items.map(x => x.price)) : 0;
+
+        // Update stats
+        const statsEl = document.getElementById('statsText');
+        statsEl.innerHTML = `Atrastas <span class="stats-highlight">${items.length}</span> pozīcijas. Lētākā cena: <span class="stats-highlight">${minPrice.toFixed(2)} €</span>`;
+
+        items.forEach(it => {
+            const tr = document.createElement('tr');
+            const isCheapest = (it.price === minPrice);
+            if (isCheapest) tr.className = 'is-cheapest';
+
+            const pillClass = it.store.toLowerCase().includes('ic24') ? 'pill-ic24' : 'pill-dipex';
+
+            tr.innerHTML = `
+                <td><span class="store-pill-mini ${pillClass}">${it.store}</span></td>
+                <td><span class="brand-badge">${escapeHtml(it.brand)}</span></td>
+                <td class="item-name">${escapeHtml(it.name)}</td>
+                <td>
+                    <span class="price-text">${it.price.toFixed(2)} €</span>
+                    ${isCheapest ? '<span class="badge-best">LĒTĀKAIS</span>' : ''}
+                </td>
+                <td><span class="stock-tag ${it.stock.includes('>') || it.stock.includes('Noliktavā') ? 'stock-available' : ''}">${escapeHtml(it.stock)}</span></td>
+                <td style="text-align: right;">
+                    <a href="${it.url}" target="_blank" class="action-link">Atvērt veikalā ↗</a>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+</script>
+
+</body>
+</html>
