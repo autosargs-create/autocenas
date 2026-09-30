@@ -50,15 +50,33 @@ def get_ic24_url(part_number: str) -> str:
 def scrape_dipex(part_number: str):
     """Izvelk cenas un detaļas no Dipex.lv."""
     url = get_dipex_url(part_number)
-    cmd = [
+    html = ""
+    # 1. Mēģinām ar ātru curl pieprasījumu
+    cmd_curl = [
         'curl', '-s', '-L',
         '-A', 'Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0',
         url
     ]
     try:
-        html = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True, timeout=12)
-    except Exception as e:
-        return []
+        res = subprocess.check_output(cmd_curl, stderr=subprocess.DEVNULL, text=True, timeout=12)
+        if 'GTMTool' in res:
+            html = res
+    except Exception:
+        pass
+
+    # 2. Ja Cloudflare nobloķēja curl, palaižam caur Chromium, kas apiet aizsardzību
+    if not html:
+        cmd_chrome = [
+            'chromium', '--headless=new', '--disable-gpu',
+            '--no-sandbox', '--disable-dev-shm-usage',
+            '--disable-blink-features=AutomationControlled',
+            '--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            '--dump-dom', url
+        ]
+        try:
+            html = subprocess.check_output(cmd_chrome, stderr=subprocess.DEVNULL, text=True, timeout=30)
+        except Exception:
+            return []
 
     # 1. Parsējam GTM datus pēc produkta ID
     impressions = re.findall(r'GTMTool\.addImpressions\(\s*({[\s\S]*?})\s*\);', html)
@@ -117,14 +135,13 @@ def scrape_ic24(part_number: str):
     cmd = [
         'chromium', '--headless=new', '--disable-gpu',
         '--no-sandbox', '--disable-dev-shm-usage',
-        '--user-data-dir=/tmp/chromium_ic24_profile',
         '--disable-blink-features=AutomationControlled',
         '--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         '--virtual-time-budget=6000',
         '--dump-dom', url
     ]
     try:
-        html = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True, timeout=15)
+        html = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True, timeout=35)
     except Exception:
         return []
 
