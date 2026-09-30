@@ -1,0 +1,7 @@
+services:
+  autocenas:
+    build: .
+    container_name: autocenas
+    restart: unless-stopped
+    ports:
+      - "7777:7777"

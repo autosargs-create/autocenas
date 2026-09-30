@@ -116,6 +116,7 @@ def scrape_ic24(part_number: str):
     url = get_ic24_url(part_number)
     cmd = [
         'chromium', '--headless=new', '--disable-gpu',
+        '--no-sandbox', '--disable-dev-shm-usage',
         '--user-data-dir=/tmp/chromium_ic24_profile',
         '--disable-blink-features=AutomationControlled',
         '--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
