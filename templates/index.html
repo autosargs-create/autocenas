@@ -600,17 +600,30 @@
         controlsBar.style.display = 'none';
         emptyState.style.display = 'none';
 
+        // Uzreiz sagatavojam un parādām tiešās saites uz veikaliem
+        const cleanCode = query.replace(/[\s\.\-]+/g, '').toUpperCase();
+        const trodoUrl = `https://www.trodo.lv/catalogsearch/result/?q=${encodeURIComponent(query)}&searchby=number`;
+        const dipexUrl = `https://dipex.lv/lv/catalog/rezerves-dalas/?search_q=${encodeURIComponent(query)}`;
+        const ic24Url = `https://www.ic24.lv/detalas/?search=${btoa(query)}`;
+
+        document.getElementById('linkTrodo').href = trodoUrl;
+        document.getElementById('linkDipex').href = dipexUrl;
+        document.getElementById('linkIc24').href = ic24Url;
+        storeLinks.style.display = 'block';
+
         try {
             const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+            if (!res.ok) throw new Error(`HTTP status: ${res.status}`);
             const data = await res.json();
 
             currentItems = data.items || [];
 
-            // Set store direct links
-            document.getElementById('linkTrodo').href = data.links.trodo;
-            document.getElementById('linkDipex').href = data.links.dipex;
-            document.getElementById('linkIc24').href = data.links.ic24;
-            storeLinks.style.display = 'block';
+            // Ja API atgrieza specifiskas saites, atjaunojam tās
+            if (data.links) {
+                if (data.links.trodo) document.getElementById('linkTrodo').href = data.links.trodo;
+                if (data.links.dipex) document.getElementById('linkDipex').href = data.links.dipex;
+                if (data.links.ic24) document.getElementById('linkIc24').href = data.links.ic24;
+            }
 
             if (currentItems.length > 0) {
                 populateBrandFilter();
@@ -618,10 +631,26 @@
                 tableContainer.style.display = 'block';
                 controlsBar.style.display = 'flex';
             } else {
+                emptyState.innerHTML = `
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
+                    <h3 style="color: var(--text);">Šim kodam neviena pozīcija netika atrasta.</h3>
+                    <p style="margin-top: 0.5rem; color: var(--text-muted);">Pārbaudi ievadītā numura pareizību vai izmanto tiešās veikalu saites augstāk.</p>
+                `;
                 emptyState.style.display = 'block';
             }
         } catch (err) {
-            alert('Kļūda iegūstot datus: ' + err.message);
+            console.warn('API nav sasniedzams tiešā veidā:', err);
+            emptyState.innerHTML = `
+                <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🚀</div>
+                <h3 style="color: var(--text);">Tiešās veikalu saites ir gatavas!</h3>
+                <p style="margin-top: 0.5rem; color: var(--text-muted); max-width: 600px; margin-left: auto; margin-right: auto;">
+                    Klikšķini uz pogām augstāk, lai uzreiz atvērtu meklēšanas rezultātus <strong>Trodo</strong>, <strong>Dipex</strong> un <strong>IC24</strong>.
+                </p>
+                <div style="margin-top: 1.2rem; padding: 0.8rem 1.2rem; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; font-size: 0.85rem; color: #94a3b8; display: inline-block;">
+                    💡 <em>Lai skatītu vienotu salīdzinošo tabulu ar noliktavu cenām, pārliecinies, ka darbojas lokālais serveris vai Cloudflare Tunnel.</em>
+                </div>
+            `;
+            emptyState.style.display = 'block';
         } finally {
             loading.style.display = 'none';
             btn.disabled = false;
